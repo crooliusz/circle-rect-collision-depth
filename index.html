@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Circle rect collision</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      border: 1px solid black;
+    }
+  </style>
+</head>
+<body>
+  <canvas></canvas>
+  <script>
+
+    class Vec2D {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+      }
+      mag() {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+      }
+      normalize() {
+        const l = this.mag();
+        if (l === 0) {
+          return new Vec2D(0, 0);
+        }
+        return new Vec2D(this.x / l, this.y / l);
+      }
+      mult(scalar) {
+        return new Vec2D(this.x * scalar, this.y * scalar);
+      }
+    }
+
+    const pixelRatio = window.devicePixelRatio;
+    window.onload = start;
+    const width = 500 * pixelRatio;
+    const height = 500 * pixelRatio;
+    let canvasEl;
+    let ctx;
+    const rect = {
+      pos: new Vec2D(120, 120),
+      width: 200,
+      height: 200,
+    }
+    const circle = {
+      pos: new Vec2D(width / 2, height / 2),
+      radius: 100,
+    }
+    function start() {
+      canvasEl = document.querySelector('canvas');
+      canvasEl.addEventListener('mousemove', onMouseMove);
+      ctx = canvasEl.getContext('2d');
+      canvasEl.width = width;
+      canvasEl.height = width;
+      canvasEl.style.width = width / 2 + 'px';
+      canvasEl.style.height = height / 2 + 'px';
+      requestAnimationFrame(draw);
+    }
+    function draw() {
+      ctx.clearRect(0, 0, width, height);
+
+      const nearestX = Math.max(rect.pos.x, Math.min(circle.pos.x, rect.pos.x + rect.width));
+      const nearestY = Math.max(rect.pos.y, Math.min(circle.pos.y, rect.pos.y + rect.height));
+      const distance = new Vec2D(circle.pos.x - nearestX, circle.pos.y - nearestY);
+      const penetrationDepth = circle.radius - distance.mag();
+
+      ctx.lineWidth = 4;
+
+      if (penetrationDepth > 0) {
+        const distanceDir = distance.normalize();
+        const penetration = distanceDir.mult(penetrationDepth);
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = 'green';
+        ctx.moveTo(nearestX, nearestY);
+        ctx.lineTo(nearestX - penetration.x, nearestY - penetration.y);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = 'red';
+      ctx.moveTo(nearestX, nearestY);
+      ctx.lineTo(nearestX + distance.x, nearestY + distance.y);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.lineWidth = 2;
+
+      ctx.fillStroke = '#000';
+      ctx.strokeRect(rect.pos.x, rect.pos.y, rect.width, rect.height);
+
+      ctx.beginPath();
+      ctx.arc(circle.pos.x, circle.pos.y, circle.radius, 0, Math.PI * 2);
+      ctx.stroke();
+
+      requestAnimationFrame(draw);
+    }
+
+    function onMouseMove(e) {
+      circle.pos.x = (e.pageX - this.offsetLeft) * pixelRatio;
+      circle.pos.y = (e.pageY - this.offsetTop) * pixelRatio;
+    }
+  </script>
+</body>
+</html>
